@@ -35,12 +35,17 @@ import { mean, stdev, zScore, quartiles } from '../utils/stats.js'
 // rate, that is most of the dataset.
 const Z_THRESHOLD_IDLE = 2
 const Z_THRESHOLD_CYCLE = 2
-const Z_THRESHOLD_FUEL = 3.2
+const Z_THRESHOLD_FUEL = 2.2
 const MIN_ROWS_FOR_ZSCORE = 8
-// Two metrics drifting together is common noise at these thresholds, not a
-// genuinely unusual shift. Reserve "several things were off at once" for
-// when all three continuous metrics move together.
-const OFF_PATTERN_MIN_TRIGGERED = 3
+
+// off-pattern-operation is a distinct claim from any single metric spiking:
+// several things drifting together, even if none of them individually
+// clears the bar that would flag it alone. It needs its own, softer
+// threshold on all three at once, checked separately from the standalone
+// flags above — not "2 of 3 hit the single-metric bar", which mostly just
+// double-counts whichever metric was already going to fire solo.
+const Z_THRESHOLD_LEANING = 1.1
+const OFF_PATTERN_REQUIRES = 3
 
 export function detectAnomalies(history, baseline = {}) {
   const anomalies = []
@@ -56,20 +61,24 @@ export function detectAnomalies(history, baseline = {}) {
 
   for (const row of history) {
     const triggered = []
+    const leaning = []
 
     if (row.idlingTimeMin != null) {
-      const outlier = isOutlier(row.idlingTimeMin, idleValues, mean(idleValues), Z_THRESHOLD_IDLE)
-      if (outlier) triggered.push('excessive-idle')
+      const z = signedZ(row.idlingTimeMin, idleValues, mean(idleValues))
+      if (z > Z_THRESHOLD_IDLE) triggered.push('excessive-idle')
+      if (z > Z_THRESHOLD_LEANING) leaning.push('idle')
     }
 
     if (row.cycleTimeSec != null && baseline.cycleTimeSec != null) {
-      const outlier = isOutlier(row.cycleTimeSec, cycleValues, baseline.cycleTimeSec, Z_THRESHOLD_CYCLE)
-      if (outlier) triggered.push('cycle-time-drift')
+      const z = signedZ(row.cycleTimeSec, cycleValues, baseline.cycleTimeSec)
+      if (z > Z_THRESHOLD_CYCLE) triggered.push('cycle-time-drift')
+      if (z > Z_THRESHOLD_LEANING) leaning.push('cycle time')
     }
 
     if (row.fuelUsedL != null && baseline.fuelPerCycleL != null) {
-      const outlier = isOutlier(row.fuelUsedL, fuelPerCycleValues, baseline.fuelPerCycleL, Z_THRESHOLD_FUEL)
-      if (outlier) triggered.push('fuel-per-cycle-spike')
+      const z = signedZ(row.fuelUsedL, fuelPerCycleValues, baseline.fuelPerCycleL)
+      if (z > Z_THRESHOLD_FUEL) triggered.push('fuel-per-cycle-spike')
+      if (z > Z_THRESHOLD_LEANING) leaning.push('fuel use')
     }
 
     if (row.seatbelt === 'Unfastened') {
@@ -84,13 +93,13 @@ export function detectAnomalies(history, baseline = {}) {
       })
     }
 
-    if (triggered.length >= OFF_PATTERN_MIN_TRIGGERED) {
+    if (leaning.length >= OFF_PATTERN_REQUIRES) {
       anomalies.push({
         id: `pattern-${row.timestamp}`,
         kind: 'off-pattern-operation',
         severity: 'medium',
-        plainLanguage: `Several things were off at once: ${triggered.filter((k) => k !== 'off-pattern-operation').join(', ')}`,
-        observed: `idle ${row.idlingTimeMin} min, cycle ${row.cycleTimeSec ?? '—'} s`,
+        plainLanguage: `Several things were off at once: ${leaning.join(', ')}`,
+        observed: `idle ${row.idlingTimeMin} min, cycle ${row.cycleTimeSec ?? '—'} s, fuel ${row.fuelUsedL ?? '—'} L`,
         expected: 'operator baseline',
         since: row.timestamp,
       })
@@ -130,17 +139,21 @@ export function detectAnomalies(history, baseline = {}) {
   return anomalies
 }
 
-/** z-score against a reference centre when the window is big enough to trust
- * a standard deviation; an IQR fence otherwise. */
-function isOutlier(value, sampleForSpread, centre, threshold) {
+/** Signed z-score (high side positive) against a reference centre when the
+ * window is big enough to trust a standard deviation; an IQR fence
+ * otherwise, mapped onto the same ±3-ish scale so callers can use one set
+ * of thresholds regardless of which path ran. */
+function signedZ(value, sampleForSpread, centre) {
   if (sampleForSpread.length >= MIN_ROWS_FOR_ZSCORE) {
     const sd = stdev(sampleForSpread)
-    if (sd === 0) return false
-    return Math.abs((value - centre) / sd) > threshold
+    if (sd === 0) return 0
+    return (value - centre) / sd
   }
   const { q1, q3, iqr } = quartiles(sampleForSpread)
-  if (iqr === 0) return false
-  return value > q3 + 1.5 * iqr || value < q1 - 1.5 * iqr
+  if (iqr === 0) return 0
+  if (value > q3 + 1.5 * iqr) return 3
+  if (value < q1 - 1.5 * iqr) return -3
+  return 0
 }
 
 // zScore is re-exported for callers (e.g. the Coach) that want the same

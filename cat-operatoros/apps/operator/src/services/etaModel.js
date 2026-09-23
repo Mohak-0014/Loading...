@@ -127,6 +127,26 @@ export function trainModel(rows, { lambda = 0.5 } = {}) {
   }
 }
 
+/**
+ * DECISION, NOT YET BUILT: residualStdev is a single fixed spread applied
+ * to the whole task regardless of length, so the interval widens linearly
+ * with nothing — a 104-minute trench task gets the same ±13.75 min as a
+ * 30-minute one, which reads as roughly ±13% on the long task and roughly
+ * ±46% on the short one. Neither is really right; a longer task has more
+ * opportunity for delays to average out, not the same absolute uncertainty
+ * as a short one.
+ *
+ * The fix is to predict in segments for anything over ~45 min — model the
+ * task as N sub-cycles, predict each, sum the means and combine the
+ * variances (they don't just add linearly if delays are correlated across
+ * segments) — rather than one block regression on total duration. That is
+ * real work and does not belong in Phase 0. Recording the decision here so
+ * it isn't quietly forgotten: don't build segmentation now. Block 3 shows
+ * pointMin as the primary number with [lowMin, highMin] secondary — for a
+ * long task, a visibly wide range next to a confident-looking point
+ * estimate is the honest version of this limitation until segmentation
+ * exists, not something to hide.
+ */
 export function predict(model, taskFeatures) {
   const x = encodeFeatures(taskFeatures)
   const pointMin = model.intercept + x.reduce((s, v, i) => s + v * model.weights[i], 0)

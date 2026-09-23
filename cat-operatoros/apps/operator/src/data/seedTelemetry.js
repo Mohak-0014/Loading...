@@ -153,9 +153,14 @@ function generateSyntheticRows() {
       const cycleTimeSec = clamp(130 + fatigue * 50 + groundDifficulty * 25 + jitter(rng, 12), 100, 280)
 
       // --- fuel tracks RPM and duty (non-idle fraction) ---
+      // Base term set so normal-operation mean lands near
+      // baseline.fuelPerCycleL (4.8 L/record) — see operator.js. The
+      // fatigue term is real too: tired, sloppy throttle work burns more
+      // fuel for the same duty cycle, which is what should make the
+      // inefficient stretch stand out here, not just in idle and cycle time.
       const idleFraction = clamp(idlingTimeMin / 90, 0, 0.9)
       const duty = clamp(1 - idleFraction, 0.1, 0.95)
-      const fuelUsedL = clamp(1.5 + (engineRpm / 1800) * 4 * duty + jitter(rng, 0.4), 0.5, 9)
+      const fuelUsedL = clamp(1.7 + (engineRpm / 1800) * 4 * duty + fatigue * 2.2 + jitter(rng, 0.4), 0.5, 11)
 
       const machineSpeed = clamp((1 - idleFraction) * (0.8 + taskIntensity * 1.8) + jitter(rng, 0.15), 0, 3)
 
