@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { useStore } from './state/store.jsx'
 import OperatorHeader from './components/OperatorHeader.jsx'
 import BottomNavigation from './components/BottomNavigation.jsx'
 import Home from './pages/Home.jsx'
@@ -20,9 +21,11 @@ import Machine from './pages/Machine.jsx'
  *
  * BUILD ORDER: this is Block 1. Stub every page, then fill them in order.
  *
- * BLOCK 1: `screen` and `contrast` are local state here because
- * state/store.jsx (Block 2) is not built yet. Block 2 replaces both with
- * useStore() — this component should shrink, not grow, when that lands.
+ * `screen` and `contrast` come from useStore() (Block 2), not local state —
+ * a page needs to be able to change screen too (Home's coaching nudge
+ * routes into Training), and the store's own docblock is explicit about
+ * why: local component state duplicating what the store already owns is
+ * the thing that makes cross-screen effects stop working.
  */
 const PAGES = {
   home: Home,
@@ -34,28 +37,22 @@ const PAGES = {
 }
 
 export default function App() {
-  // TODO(Block 2): read { screen } from useStore() instead of local state
-  const [screen, setScreen] = useState('home')
-
-  // TODO(Block 2): contrast moves into store.mode.contrast
-  const [contrast, setContrast] = useState('normal')
+  const { state, setScreen, toggleContrast } = useStore()
+  const { screen, mode } = state
 
   useEffect(() => {
-    if (contrast === 'high') {
+    if (mode.contrast === 'high') {
       document.documentElement.setAttribute('data-contrast', 'high')
     } else {
       document.documentElement.removeAttribute('data-contrast')
     }
-  }, [contrast])
+  }, [mode.contrast])
 
   const Page = PAGES[screen]
 
   return (
     <div className="flex h-full flex-col bg-steel-900">
-      <OperatorHeader
-        contrast={contrast}
-        onToggleContrast={() => setContrast((c) => (c === 'high' ? 'normal' : 'high'))}
-      />
+      <OperatorHeader contrast={mode.contrast} onToggleContrast={toggleContrast} />
       <main className="flex-1 overflow-y-auto">
         <Page />
       </main>

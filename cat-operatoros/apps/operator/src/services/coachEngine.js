@@ -7,6 +7,10 @@ import { TRAINING_MODULES } from '../data/trainingModules.js'
  *   buildCoaching(history, baseline, anomalies) -> {
  *     metrics: [{ label, today, normal, direction }],
  *     oneThing: { text, estimatedImpact, linkedModuleId, isInvitation? },
+ *     sampleSize: number,  // history.length — for an honest provenance
+ *                          // line ("compared against your last N records"),
+ *                          // not the "30 shifts" the docs use as a generic
+ *                          // example
  *   }
  *
  * EMPTY STATE: when no metric is worse than baseline by more than
@@ -90,7 +94,7 @@ export function buildCoaching(history = [], baseline = {}, anomalies = []) {
     },
   ]
 
-  return { metrics, oneThing: pickOneThing(metrics, anomalies) }
+  return { metrics, oneThing: pickOneThing(metrics, anomalies), sampleSize: history.length }
 }
 
 // Below this relative deviation, "worse than normal" is noise, not
