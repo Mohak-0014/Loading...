@@ -106,7 +106,18 @@ export function reducer(state, action) {
 
     case 'tick': {
       const telemetry = walkTelemetry(state.telemetry)
-      return { ...state, telemetry, risk: assessRisk(telemetry, {}) }
+      const nextRisk = assessRisk(telemetry, {})
+      // Don't reopen the full-screen alert for the condition the operator
+      // just acknowledged — the random walk moves in small steps, so the
+      // very next tick is almost always still the same state and headline.
+      // Re-require ack only if something actually changed (worse, better,
+      // or a different combination of factors), not just because a new
+      // risk object with a fresh requiresAck: true got computed.
+      const risk =
+        state.risk.alertAcknowledgedAt && nextRisk.state === state.risk.state && nextRisk.headline === state.risk.headline
+          ? { ...nextRisk, requiresAck: false, alertAcknowledgedAt: state.risk.alertAcknowledgedAt }
+          : nextRisk
+      return { ...state, telemetry, risk }
     }
 
     // Block 13 owns the actual scenario content; this just applies whatever

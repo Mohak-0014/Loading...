@@ -2,12 +2,14 @@ import { useEffect } from 'react'
 import { useStore } from './state/store.jsx'
 import OperatorHeader from './components/OperatorHeader.jsx'
 import BottomNavigation from './components/BottomNavigation.jsx'
+import SafetyAlert from './components/SafetyAlert.jsx'
 import Home from './pages/Home.jsx'
 import Safety from './pages/Safety.jsx'
 import Tasks from './pages/Tasks.jsx'
 import Coach from './pages/Coach.jsx'
 import Training from './pages/Training.jsx'
 import Machine from './pages/Machine.jsx'
+import ReportHazard from './pages/ReportHazard.jsx'
 
 /**
  * App shell. Holds the screen switcher, the persistent Ask button, the
@@ -34,11 +36,18 @@ const PAGES = {
   coach: Coach,
   training: Training,
   machine: Machine,
+  // 'report' and 'handover' are in store.jsx's own screen union (Block 2)
+  // but had no entry-point until Safety's "Report hazard" button needed
+  // one. Wiring 'report' now, matching Block 1's precedent for a nav
+  // target whose page is still a TODO stub (Coach, Training, Machine
+  // all shipped exactly this way): a real screen switch to a blank page
+  // is honest about what's built; a button that goes nowhere is not.
+  report: ReportHazard,
 }
 
 export default function App() {
-  const { state, setScreen, toggleContrast } = useStore()
-  const { screen, mode } = state
+  const { state, setScreen, toggleContrast, acknowledgeRisk } = useStore()
+  const { screen, mode, risk } = state
 
   useEffect(() => {
     if (mode.contrast === 'high') {
@@ -57,7 +66,7 @@ export default function App() {
         <Page />
       </main>
       <BottomNavigation screen={screen} onNavigate={setScreen} />
-      {/* TODO(Block 4): mount <SafetyAlert /> as a fixed overlay */}
+      <SafetyAlert risk={risk} onAcknowledge={acknowledgeRisk} />
       {/* TODO(Block 13): mount <DemoControls /> behind a long-press on the header */}
     </div>
   )

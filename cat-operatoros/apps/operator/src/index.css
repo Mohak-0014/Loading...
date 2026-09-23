@@ -106,8 +106,10 @@ body {
   }
 }
 
+/* Runs once — "pulses once and settles", not a loop. The 100% keyframe is
+   the resting state, so it plays and simply stops there. */
 .state-pulse {
-  animation: state-pulse 1.4s ease-out infinite;
+  animation: state-pulse 1.4s ease-out 1;
 }
 
 @media (prefers-reduced-motion: reduce) {

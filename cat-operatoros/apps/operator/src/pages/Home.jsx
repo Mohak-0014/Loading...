@@ -77,7 +77,7 @@ export default function Home() {
           ) : (
             <>
               <p className="mt-1 text-label text-concrete-400">
-                Compared against your last {coach.sampleSize} records
+                Compared against your last {coach.sampleSize} cycles
               </p>
               <button
                 type="button"

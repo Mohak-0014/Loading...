@@ -8,9 +8,13 @@ import { TRAINING_MODULES } from '../data/trainingModules.js'
  *     metrics: [{ label, today, normal, direction }],
  *     oneThing: { text, estimatedImpact, linkedModuleId, isInvitation? },
  *     sampleSize: number,  // history.length — for an honest provenance
- *                          // line ("compared against your last N records"),
- *                          // not the "30 shifts" the docs use as a generic
- *                          // example
+ *                          // line ("compared against your last N cycles").
+ *                          // "cycles" to match the ETA screen's vocabulary
+ *                          // (docs/AI_GUIDELINES.md's own examples use
+ *                          // different nouns per surface — "cycles",
+ *                          // "shifts" — but two different nouns on the
+ *                          // same Home screen reads as inconsistent, not
+ *                          // context-appropriate)
  *   }
  *
  * EMPTY STATE: when no metric is worse than baseline by more than

@@ -1,8 +1,14 @@
 /**
  * StatusBadge
  * Safety state pill. The only component allowed to emit state colour directly. Props: state, size, label.
+ *
+ * STATE_CLASSES is exported so SafetyAlert.jsx — the one surface the
+ * design system explicitly asks to "spend the boldness" on — reuses this
+ * exact mapping for its own card chrome instead of maintaining a second,
+ * driftable copy. "Only StatusBadge emits state colour" means one source
+ * of truth for the mapping, not that nothing else may ever render it.
  */
-const STATE_LABEL = {
+export const STATE_LABEL = {
   safe: 'Safe',
   attention: 'Attention',
   high: 'High attention',
@@ -11,7 +17,7 @@ const STATE_LABEL = {
 
 // Each class string needs to appear literally for Tailwind to generate it —
 // no dynamic `bg-state-${state}` interpolation.
-const STATE_CLASSES = {
+export const STATE_CLASSES = {
   safe: 'border-state-safe bg-state-safe/15 text-state-safe',
   attention: 'border-state-attention bg-state-attention/15 text-state-attention',
   high: 'border-state-high bg-state-high/15 text-state-high',
