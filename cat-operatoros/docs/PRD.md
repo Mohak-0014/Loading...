@@ -86,8 +86,10 @@ operator from working. See ADR 0002.
 > tablet and is not uploaded. Your supervisor sees whether the check passed,
 > not the picture. You can skip it.
 
-*Done when:* the check completes in under 15 seconds including capture, the
-override path is reachable in two taps from a failed result, and a full
+*Done when:* the check completes in under 15 seconds including capture,
+retake is offered on the first failed result, override becomes available on
+the second failed result and is two taps from there, skip remains reachable
+at every step so fail-open holds from the first failure onward, and a full
 shift's worth of checks works with the network down.
 
 **Out of scope, permanently:** PPE data feeding any score, ranking or

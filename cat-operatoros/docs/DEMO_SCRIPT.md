@@ -16,11 +16,14 @@ starts." Read the notice aloud: helmet, vest, eye protection; the photo stays
 on this tablet; your supervisor sees pass or fail, not the picture; you can
 skip it. Capture. Show the per-item result.
 
-**0:25 — Fail it on purpose.** Take the override in two taps. "It never
-blocks anyone from working. A model that misreads a vest at 6 a.m. must not
-be why someone can't move a machine." Say plainly that detection is stubbed
-here and the interaction — notice, capture, override — is what is being
-validated. Do not let it be discovered.
+**0:25 — Fail it on purpose.** Tap "Skip instead" — one tap, pick a reason,
+one more tap, done. "It never blocks anyone from working. A model that
+misreads a vest at 6 a.m. must not be why someone can't move a machine."
+Mention, don't demonstrate: fail it twice instead of skipping and a two-tap
+override appears in its place — same fail-open guarantee, logged
+differently. Say plainly that detection is stubbed here and the interaction
+— notice, capture, skip, override — is what is being validated. Do not let
+it be discovered.
 
 **0:40 — Home.** "This is built for one person: the operator in the seat. Not
 a fleet dashboard." Task, progress, ETA, safety green.
