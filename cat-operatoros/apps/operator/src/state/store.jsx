@@ -38,6 +38,7 @@ import { localTimestamp } from '../utils/format.js'
  *   faultLog,            // fault-symbol lookups, feeds machine + handover
  *   syncQueue,           // items pending "sync" for the offline badge
  *   ppeCheck,             // null until Shift Start concludes; see recordPpeCheck
+ *   focusedTrainingModuleId, // set by Coach's routing, read once by Training
  * }
  *
  * `screen` boots as 'shiftStart', not 'home' — Shift Start is a flow, not a
@@ -47,7 +48,7 @@ import { localTimestamp } from '../utils/format.js'
  * ACTIONS (keep this list short; every action must be demo-visible)
  *   setScreen, tick, applyDemoScenario, reportHazard, completeTask,
  *   acknowledgeRisk, completeTraining, logFault, toggleGlance, toggleContrast,
- *   recordPpeCheck
+ *   recordPpeCheck, focusTraining
  *
  * PERSISTENCE: mirror to localStorage via services/persistence.js on every
  * change. Hydrate on boot. See the quota warning in that file. (Block 13 —
@@ -100,6 +101,7 @@ export function buildInitialState() {
     anomalies,
     coach,
     training: TRAINING_MODULES.map((m) => ({ ...m, completed: false })),
+    focusedTrainingModuleId: null,
     faultLog: [],
     syncQueue: [],
     ppeCheck: null,
@@ -175,6 +177,13 @@ export function reducer(state, action) {
       return { ...state, training }
     }
 
+    // Block 10: Coach's "Improve this" has to route to the module matching
+    // the anomaly it actually flagged, not whichever module sorts first —
+    // this is what Training.jsx reads to land there instead of the top of
+    // the list.
+    case 'focusTraining':
+      return { ...state, focusedTrainingModuleId: action.moduleId }
+
     case 'logFault': {
       const entry = { id: `fault-${Date.now()}`, symbolId: action.symbolId, timestamp: nowStamp() }
       return { ...state, faultLog: [entry, ...state.faultLog] }
@@ -217,6 +226,7 @@ export function StoreProvider({ children }) {
       completeTask: (taskId) => dispatch({ type: 'completeTask', taskId }),
       acknowledgeRisk: () => dispatch({ type: 'acknowledgeRisk' }),
       completeTraining: (moduleId) => dispatch({ type: 'completeTraining', moduleId }),
+      focusTraining: (moduleId) => dispatch({ type: 'focusTraining', moduleId }),
       logFault: (symbolId) => dispatch({ type: 'logFault', symbolId }),
       toggleGlance: () => dispatch({ type: 'toggleGlance' }),
       toggleContrast: () => dispatch({ type: 'toggleContrast' }),
