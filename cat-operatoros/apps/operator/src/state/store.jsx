@@ -22,8 +22,8 @@ import { localTimestamp } from '../utils/format.js'
  *
  * SHAPE
  * {
- *   screen: 'home' | 'safety' | 'tasks' | 'coach' | 'training' | 'machine'
- *           | 'report' | 'handover',
+ *   screen: 'shiftStart' | 'home' | 'safety' | 'tasks' | 'coach' | 'training'
+ *           | 'machine' | 'report' | 'handover',
  *   mode: { glance: boolean, contrast: 'normal' | 'high', demoRunning: boolean },
  *   operator,            // data/operator.js
  *   machine,             // data/machine.js
@@ -37,11 +37,17 @@ import { localTimestamp } from '../utils/format.js'
  *   training,            // module list + completion
  *   faultLog,            // fault-symbol lookups, feeds machine + handover
  *   syncQueue,           // items pending "sync" for the offline badge
+ *   ppeCheck,             // null until Shift Start concludes; see recordPpeCheck
  * }
+ *
+ * `screen` boots as 'shiftStart', not 'home' — Shift Start is a flow, not a
+ * nav tab (no BottomNavigation entry), and is the app's launch screen ahead
+ * of Home per docs/PRD.md §5. Nothing routes back to it once it concludes.
  *
  * ACTIONS (keep this list short; every action must be demo-visible)
  *   setScreen, tick, applyDemoScenario, reportHazard, completeTask,
- *   acknowledgeRisk, completeTraining, logFault, toggleGlance, toggleContrast
+ *   acknowledgeRisk, completeTraining, logFault, toggleGlance, toggleContrast,
+ *   recordPpeCheck
  *
  * PERSISTENCE: mirror to localStorage via services/persistence.js on every
  * change. Hydrate on boot. See the quota warning in that file. (Block 13 —
@@ -82,7 +88,7 @@ export function buildInitialState() {
   const risk = assessRisk(telemetry, {})
 
   return {
-    screen: 'home',
+    screen: 'shiftStart',
     mode: { glance: false, contrast: 'normal', demoRunning: false },
     operator: OPERATOR,
     machine: MACHINE,
@@ -96,6 +102,7 @@ export function buildInitialState() {
     training: TRAINING_MODULES.map((m) => ({ ...m, completed: false })),
     faultLog: [],
     syncQueue: [],
+    ppeCheck: null,
     _etaModel: etaModel, // kept to re-predict if a task's features change; never rendered
   }
 }
@@ -179,6 +186,15 @@ export function reducer(state, action) {
     case 'toggleContrast':
       return { ...state, mode: { ...state.mode, contrast: state.mode.contrast === 'high' ? 'normal' : 'high' } }
 
+    // Shift Start (Block 7) writes its outcome here once — pass, override
+    // or skip — for the handover to read later. "Supervisor notified" has
+    // no real target in Phase 0 (no backend); action.record carries a
+    // supervisorNotified flag that's true on override, and the handover
+    // (Block 11) shows that flag as text. Not a toast, because nothing
+    // exists on the other end for a toast to represent honestly.
+    case 'recordPpeCheck':
+      return { ...state, ppeCheck: action.record }
+
     default:
       return state
   }
@@ -204,6 +220,7 @@ export function StoreProvider({ children }) {
       logFault: (symbolId) => dispatch({ type: 'logFault', symbolId }),
       toggleGlance: () => dispatch({ type: 'toggleGlance' }),
       toggleContrast: () => dispatch({ type: 'toggleContrast' }),
+      recordPpeCheck: (record) => dispatch({ type: 'recordPpeCheck', record }),
     }),
     [],
   )

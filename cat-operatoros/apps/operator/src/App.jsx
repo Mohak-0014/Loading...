@@ -10,6 +10,7 @@ import Coach from './pages/Coach.jsx'
 import Training from './pages/Training.jsx'
 import Machine from './pages/Machine.jsx'
 import ReportHazard from './pages/ReportHazard.jsx'
+import ShiftStart from './pages/ShiftStart.jsx'
 
 /**
  * App shell. Holds the screen switcher, the persistent Ask button, the
@@ -30,6 +31,7 @@ import ReportHazard from './pages/ReportHazard.jsx'
  * the thing that makes cross-screen effects stop working.
  */
 const PAGES = {
+  shiftStart: ShiftStart,
   home: Home,
   safety: Safety,
   tasks: Tasks,
@@ -65,7 +67,9 @@ export default function App() {
       <main className="flex-1 overflow-y-auto">
         <Page />
       </main>
-      <BottomNavigation screen={screen} onNavigate={setScreen} />
+      {/* No nav during Shift Start — it's a flow the operator completes or
+          skips, not a screen reachable by tapping away from. */}
+      {screen !== 'shiftStart' && <BottomNavigation screen={screen} onNavigate={setScreen} />}
       <SafetyAlert risk={risk} onAcknowledge={acknowledgeRisk} />
       {/* TODO(Block 13): mount <DemoControls /> behind a long-press on the header */}
     </div>
