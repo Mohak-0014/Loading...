@@ -1,4 +1,8 @@
 /**
+ * PHASE 0: classify() returns SCRIPTED candidates, or is skipped
+ * entirely in favour of the manual symbol grid, which is the real
+ * Phase 0 experience. Do not build ONNX loading in Phase 0.
+ *
  * On-device warning-light classification.
  *
  *   classify(imageBitmap) -> { candidates: [{ symbolId, confidence }], modelVersion }

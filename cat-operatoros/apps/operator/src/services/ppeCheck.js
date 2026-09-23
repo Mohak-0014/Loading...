@@ -1,4 +1,8 @@
 /**
+ * PHASE 0: check() returns a SCRIPTED result. Keep the signature below
+ * intact so the Phase 2 model drops in behind it. The UI must label the
+ * stub visibly. Do not build ONNX loading in Phase 0.
+ *
  * On-device PPE inference.
  *
  *   loadModel()                 -> ONNX Runtime Web session, cached

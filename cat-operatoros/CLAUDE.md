@@ -26,6 +26,9 @@ person in the cab, not a supervisor and not a fleet manager.
 
 ## The eight rules
 
+All eight are load-bearing. If a prompt refers to "the five rules", it is out
+of date — follow this file.
+
 1. **Logic never lives in components.** Risk, anomaly, ETA, coaching and PPE
    evaluation are pure functions in `services/`.
 2. **Offline is the normal case.** Every mutation goes through the outbox in

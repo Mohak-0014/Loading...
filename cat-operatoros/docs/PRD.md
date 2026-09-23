@@ -138,9 +138,11 @@ appears in Hazard Memory and the handover.
 Schedule with inline predicted ETA. Expanding shows the contributor breakdown
 in plain-language labels.
 
-*Done when:* the prediction moves when inputs move, the interval is calibrated
-within 5 points of nominal, and you can state the method in one sentence
-without lying.
+*Done when:* the prediction moves when inputs move, the interval is derived
+from residual spread rather than invented, and you can state the method in
+one sentence without lying. (Interval calibration within 5 points of nominal
+is a Phase 3 criterion, checked against real held-out shifts — measuring
+calibration over synthetic seed data would be theatre.)
 
 ### Coach
 Today against the operator's own rolling baseline. Unusual Activity feed. One
