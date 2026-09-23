@@ -26,8 +26,21 @@ import { mean, stdev, zScore, quartiles } from '../utils/stats.js'
  * instead of a z-score.
  */
 
-const Z_THRESHOLD = 2
+// Per-metric thresholds, not one global number. Fuel needs to be stricter
+// than idle/cycle: the baseline centre for fuel is a rough one-decimal
+// constant (4.8 L) rather than something derived the same way the spread
+// is, so it runs looser day to day and needs a wider margin before it is
+// worth calling out. Loosened from a shared z > 2 after the first pass
+// flagged a third of all records as "anomalous" — that is not an unusual
+// rate, that is most of the dataset.
+const Z_THRESHOLD_IDLE = 2
+const Z_THRESHOLD_CYCLE = 2
+const Z_THRESHOLD_FUEL = 3.2
 const MIN_ROWS_FOR_ZSCORE = 8
+// Two metrics drifting together is common noise at these thresholds, not a
+// genuinely unusual shift. Reserve "several things were off at once" for
+// when all three continuous metrics move together.
+const OFF_PATTERN_MIN_TRIGGERED = 3
 
 export function detectAnomalies(history, baseline = {}) {
   const anomalies = []
@@ -45,17 +58,17 @@ export function detectAnomalies(history, baseline = {}) {
     const triggered = []
 
     if (row.idlingTimeMin != null) {
-      const outlier = isOutlier(row.idlingTimeMin, idleValues, mean(idleValues))
+      const outlier = isOutlier(row.idlingTimeMin, idleValues, mean(idleValues), Z_THRESHOLD_IDLE)
       if (outlier) triggered.push('excessive-idle')
     }
 
     if (row.cycleTimeSec != null && baseline.cycleTimeSec != null) {
-      const outlier = isOutlier(row.cycleTimeSec, cycleValues, baseline.cycleTimeSec)
+      const outlier = isOutlier(row.cycleTimeSec, cycleValues, baseline.cycleTimeSec, Z_THRESHOLD_CYCLE)
       if (outlier) triggered.push('cycle-time-drift')
     }
 
     if (row.fuelUsedL != null && baseline.fuelPerCycleL != null) {
-      const outlier = isOutlier(row.fuelUsedL, fuelPerCycleValues, baseline.fuelPerCycleL)
+      const outlier = isOutlier(row.fuelUsedL, fuelPerCycleValues, baseline.fuelPerCycleL, Z_THRESHOLD_FUEL)
       if (outlier) triggered.push('fuel-per-cycle-spike')
     }
 
@@ -71,7 +84,7 @@ export function detectAnomalies(history, baseline = {}) {
       })
     }
 
-    if (triggered.length >= 2) {
+    if (triggered.length >= OFF_PATTERN_MIN_TRIGGERED) {
       anomalies.push({
         id: `pattern-${row.timestamp}`,
         kind: 'off-pattern-operation',
@@ -119,11 +132,11 @@ export function detectAnomalies(history, baseline = {}) {
 
 /** z-score against a reference centre when the window is big enough to trust
  * a standard deviation; an IQR fence otherwise. */
-function isOutlier(value, sampleForSpread, centre) {
+function isOutlier(value, sampleForSpread, centre, threshold) {
   if (sampleForSpread.length >= MIN_ROWS_FOR_ZSCORE) {
     const sd = stdev(sampleForSpread)
     if (sd === 0) return false
-    return Math.abs((value - centre) / sd) > Z_THRESHOLD
+    return Math.abs((value - centre) / sd) > threshold
   }
   const { q1, q3, iqr } = quartiles(sampleForSpread)
   if (iqr === 0) return false

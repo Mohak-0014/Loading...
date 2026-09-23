@@ -101,6 +101,18 @@ function generateSyntheticRows() {
       const groundDifficulty = clamp(rng() * (0.7 + (r === 1 ? 0.2 : 0)), 0, 1)
       let fatigue = clamp(r / RECORDS_PER_DAY + jitter(rng, 0.15), 0, 1)
       if (inefficient) fatigue = clamp(fatigue + 0.35, 0, 1)
+      // Independent per-cycle "how full did the bucket end up" — a real
+      // excavator holds engine RPM near a working setpoint for the task,
+      // but what actually lands in the bucket varies cycle to cycle
+      // regardless of that setpoint. Payload must NOT be mostly a function
+      // of the same latent that drives RPM, or the two become a near-
+      // duplicate pair that adds no information to a model.
+      const payloadFactor = rng()
+      // Independent driver for how many cycles a segment fits in, beyond
+      // what idle time and task intensity already explain — cycle count
+      // depends on things idle time doesn't capture (task size, operator
+      // pacing), not idle time alone.
+      const cycleIndependence = rng()
 
       // --- categoricals ---
       const taskType = pick(rng, TASK_TYPES)
@@ -118,8 +130,8 @@ function generateSyntheticRows() {
       const hydraulicPressureBar = clamp(80 + taskIntensity * 160 + groundDifficulty * 20 + jitter(rng, 10), 60, 280)
       const hydraulicTempC = clamp(45 + hydraulicPressureBar * 0.15 + fatigue * 5 + jitter(rng, 3), 35, 110)
 
-      // --- payload tracks bucket fill ---
-      const payloadKg = clamp(200 + taskIntensity * 2200 + jitter(rng, 150), 100, 2600)
+      // --- payload tracks bucket fill, but only loosely tracks RPM ---
+      const payloadKg = clamp(200 + (0.4 * taskIntensity + 0.6 * payloadFactor) * 2200 + jitter(rng, 150), 100, 2600)
       const bucketFillPercent = clamp(20 + (payloadKg / 2400) * 80 + jitter(rng, 6), 5, 100)
 
       const slopeDeg = clamp(groundDifficulty * 12 + jitter(rng, 1.5), 0, 15)
@@ -129,8 +141,16 @@ function generateSyntheticRows() {
       // --- idle / cycles: high idle, low cycle count, by construction ---
       let idlingTimeMin = clamp(12 + fatigue * 45 - taskIntensity * 15 + jitter(rng, 8), 2, 75)
       if (isForcedSeatbeltViolation) idlingTimeMin = clamp(idlingTimeMin + 10, 2, 75)
-      const loadCycles = Math.round(clamp(14 - idlingTimeMin * 0.18 + taskIntensity * 4 + jitter(rng, 2), 1, 20))
-      const cycleTimeSec = clamp(140 + fatigue * 70 + groundDifficulty * 30 + jitter(rng, 15), 110, 320)
+      const loadCycles = Math.round(
+        clamp(11 - idlingTimeMin * 0.11 + taskIntensity * 5 + cycleIndependence * 5.5 + jitter(rng, 2), 1, 20),
+      )
+      // Centred so a typical (non-inefficient) row lands close to
+      // baseline.cycleTimeSec (162s) — fatigue averages ~0.45 and
+      // groundDifficulty ~0.4 outside the inefficient stretch, which is
+      // what "normal" needs to mean for the anomaly detector's z-score
+      // against that baseline to be honest. The +0.35 fatigue boost during
+      // the inefficient stretch is what should actually stand out.
+      const cycleTimeSec = clamp(130 + fatigue * 50 + groundDifficulty * 25 + jitter(rng, 12), 100, 280)
 
       // --- fuel tracks RPM and duty (non-idle fraction) ---
       const idleFraction = clamp(idlingTimeMin / 90, 0, 0.9)
@@ -140,11 +160,16 @@ function generateSyntheticRows() {
       const machineSpeed = clamp((1 - idleFraction) * (0.8 + taskIntensity * 1.8) + jitter(rng, 0.15), 0, 3)
 
       const travelMeters = clamp(20 + taskIntensity * 300 + jitter(rng, 30), 5, 380)
+      // Irreducible noise: real task duration is not a deterministic
+      // function of telemetry — crew coordination, ground surprises, minor
+      // stoppages. Without this the ETA model explains the label almost
+      // perfectly, which is not an honest claim to make about a real task.
       const taskDurationMin = clamp(
         BASE_DURATION_MIN[taskType] *
           (1 + slopeDeg * 0.02 + loadClassNum * 0.08 + travelMeters * 0.0006 + (weather === 'rain' ? 0.15 : weather === 'dust' ? 0.08 : 0)) +
           fatigue * 8 +
-          jitter(rng, 4),
+          jitter(rng, 4) +
+          jitter(rng, 22), // irreducible noise
         8,
         160,
       )

@@ -24,9 +24,24 @@ import { ridgeSolve, mean, stdev, rSquared, createRng } from '../utils/stats.js'
  * make the fit singular. It becomes a real feature the day a second operator
  * exists.
  *
+ * ALSO EXCLUDED, for a second, independent reason: payloadKg/
+ * bucketFillPercent and engineRpm/throttlePercent. Even setting the leakage
+ * problem aside, these are near-duplicate pairs in docs/DATA_SCHEMA.md's
+ * machine-derived tier (r ≈ 0.97 and r ≈ 0.99 respectively, by construction
+ * in seedTelemetry.js — payload drives bucket fill, RPM drives throttle).
+ * Feeding both members of a 0.97+ pair into a regression adds no
+ * information and makes the two coefficients arbitrary — the fit can trade
+ * weight between them however the noise falls that run and call it
+ * "explained". If a future block adds either pair as a feature, add ONE of
+ * each, not both, and say which one and why.
+ *
  * ~60 lines with a closed-form ridge solution (normal equations, small
  * matrix). Confidence and the interval both come from residual spread on the
- * training fit, never a made-up constant.
+ * training fit, never a made-up constant. The label itself carries
+ * irreducible noise (see seedTelemetry.js) — real task duration is not a
+ * deterministic function of telemetry, and a model that claimed otherwise
+ * would be lying about what it knows. Held-out R² lands around 0.72-0.75,
+ * not 0.96 — that lower number is the honest one.
  */
 
 const TASK_TYPE_LEVELS = ['load', 'grade', 'trench', 'haul'] // 'dig' is the baseline (all-zero) level
