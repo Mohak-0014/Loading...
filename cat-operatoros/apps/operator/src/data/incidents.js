@@ -1,3 +1,5 @@
+import { localTimestamp } from '../utils/format.js'
+
 /**
  * Historical incidents. This is what makes Hazard Memory work — the site
  * knows things before the operator arrives.
@@ -21,7 +23,7 @@ function daysAgo(n, hour = 10, minute = 0) {
   const d = new Date()
   d.setDate(d.getDate() - n)
   d.setHours(hour, minute, 0, 0)
-  return d.toISOString().slice(0, 19)
+  return localTimestamp(d)
 }
 
 export const INCIDENTS = [

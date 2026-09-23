@@ -1,4 +1,5 @@
 import { createRng } from '../utils/stats.js'
+import { localTimestamp } from '../utils/format.js'
 
 /**
  * Seed telemetry.
@@ -214,7 +215,7 @@ function generateSyntheticRows() {
       engineHours = Math.round((engineHours + 0.3 + taskIntensity * 1.3 + jitter(rng, 0.15)) * 10) / 10
 
       rows.push({
-        timestamp: timestamp.toISOString().slice(0, 19),
+        timestamp: localTimestamp(timestamp),
         machineId: 'EXC001',
         operatorId: 'OP1001',
         engineHours,

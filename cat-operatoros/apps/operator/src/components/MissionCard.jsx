@@ -50,9 +50,23 @@ export default function MissionCard({ task, risk }) {
         <div className="mt-4">
           <p className="text-label text-concrete-400">Predicted time</p>
           <p className="tabular text-3xl text-concrete-100">{Math.round(prediction.pointMin)} min</p>
-          <p className="tabular text-body text-concrete-400">
-            {Math.round(prediction.lowMin)}–{Math.round(prediction.highMin)} min range
-          </p>
+          {/*
+            etaModel.js's residualStdev is one fixed absolute spread applied
+            to every task regardless of length (documented there). Below
+            ~45 min that reads as a ±35-69% range — wider than useless,
+            actively misleading next to a confident-looking point estimate.
+            docs/AI_GUIDELINES.md §7: "when the system is uncertain, it says
+            less rather than guessing." Below the threshold, say less: the
+            point estimate and its provenance, no range. This is a display
+            rule only — the model isn't touched, and the range still shows
+            for tasks long enough that the same absolute spread is a
+            reasonable relative one.
+          */}
+          {prediction.pointMin >= 45 && (
+            <p className="tabular text-body text-concrete-400">
+              {Math.round(prediction.lowMin)}–{Math.round(prediction.highMin)} min range
+            </p>
+          )}
           <p className="mt-1 text-label text-concrete-400">Predicted from {prediction.nSimilar} similar cycles</p>
         </div>
       )}

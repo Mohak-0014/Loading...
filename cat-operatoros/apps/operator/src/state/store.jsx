@@ -10,6 +10,7 @@ import { detectAnomalies } from '../services/anomalyDetector.js'
 import { buildCoaching } from '../services/coachEngine.js'
 import { trainModel, predict } from '../services/etaModel.js'
 import { useTelemetryClock, walkTelemetry } from '../hooks/useTelemetryClock.js'
+import { localTimestamp } from '../utils/format.js'
 
 /**
  * The single source of truth. Every screen reads from here; no screen owns
@@ -62,7 +63,7 @@ const RECENT_WINDOW = 8
 const INEFFICIENT_STRETCH_END = 156 // exclusive; see seedTelemetry.js
 
 function nowStamp() {
-  return new Date().toISOString().slice(0, 19)
+  return localTimestamp()
 }
 
 export function buildInitialState() {
