@@ -46,7 +46,8 @@ Zone C count going from 3 to 4 **live**. "The site just got smarter."
 **3:10 — Task completes.** Four minutes under prediction. Open the breakdown:
 "predicted from 14 similar cycles", real contributors.
 
-**3:30 — Coach.** Idle 11% against your own normal of 8%. One thing to
+**3:30 — Coach.** Idle 38% against your own normal of 23% — the tail of the
+inefficient stretch in the seed data, not an invented number. One thing to
 improve. "We never rank operators against each other."
 
 **3:45 — Training.** Tap through. Thirty-second scenario, assigned *because*

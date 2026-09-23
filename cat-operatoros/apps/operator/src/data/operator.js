@@ -3,28 +3,54 @@
  * against. The baseline is the whole point: never rank operators against
  * each other, only against their own history.
  *
- * Every field here is checked against seedTelemetry.js's normal-operation
- * subset (everything outside the inefficient stretch and the forced
- * seatbelt violations), the same way fuelPerCycleL and cycleTimeSec's
- * generator centring got checked. idlePercent and seatbeltCompliancePercent
- * were corrected in this pass:
- *   - idlePercent was 8, written before any telemetry existed. The given
- *     sample rows alone (idle 30 min and 15 min on the two Fastened rows)
- *     already rule out 8% under any workable per-record window — even the
- *     most generous reading is well above it. Corrected to 23, matching
- *     both the given rows and the synthetic normal-operation mean.
- *   - seatbeltCompliancePercent was 97 against an actual 98.0
- *     (196 Fastened / 200 total, by construction — 2 given + 2 forced
- *     violations). Corrected to 98.
- *   - cycleTimeSec (162) and fuelPerCycleL (4.8) were already within a few
- *     percent of the generator's normal-operation mean; left as-is.
+ * Every field is annotated below with its evidence: whether it is
+ * corroborated by the judges' four given rows (the one thing in this
+ * dataset that cannot be adjusted to fit) or is generator-derived only,
+ * meaning it is only as good as seedTelemetry.js's latent-variable design.
+ * "Generator-derived only" is not a weaker number by definition, but it is
+ * one with a narrower evidence base, worth knowing if either ever needs
+ * re-justifying.
  *
- * KNOWN DOWNSTREAM CONFLICT: docs/DEMO_SCRIPT.md's Coach beat narrates
- * "Idle 11% against your own normal of 8%" — written for the old, wrong
- * baseline. With idlePercent now 23, that specific pair of numbers no
- * longer makes narrative sense (11% would read as better than normal, not
- * worse). Not fixed here — out of this pass's scope — but it will need
- * reconciling once Block 3+ builds the Coach screen against real numbers.
+ *   cycleTimeSec: 162 — GENERATOR-DERIVED ONLY. The given rows don't carry
+ *     cycleTimeSec (it isn't one of the 9 given fields), so there is
+ *     nothing in the fixed data to check it against. Matches the
+ *     synthetic normal-operation mean (157.6s) within a few percent.
+ *
+ *   idlePercent: 23 — CORROBORATED. Was 8, written before any telemetry
+ *     existed. The two given Fastened rows alone (idle 30 min, 15 min)
+ *     already rule out 8% under any workable per-record window; their own
+ *     average (~24.9% under the 90-min-per-record convention
+ *     seedTelemetry.js uses) lines up with the synthetic normal-operation
+ *     mean (23.0%). Corrected to 23 on both counts agreeing.
+ *
+ *   fuelPerCycleL: 4.8 — CORROBORATED, loosely. The two given Fastened
+ *     rows' raw fuelUsedL (5.2, 6.1) average 5.65; the synthetic
+ *     normal-operation mean is 4.95. 4.8 sits inside that range, not
+ *     exactly matching either but not contradicted by either. Left as-is;
+ *     nudged the generator up half a litre so it centres on this value
+ *     rather than the reverse.
+ *
+ *   seatbeltCompliancePercent: 97 — TENSION, resolved in favour of the
+ *     generator, not the sample. The given rows are 50% Unfastened (2 of
+ *     4) — but n=4, and those two rows exist specifically to demonstrate
+ *     the seatbelt/safetyAlert correlation for the challenge, not to claim
+ *     "this operator is unfastened half the time." A real 50% baseline
+ *     would mean the "baseline" framing itself has failed — that isn't a
+ *     coaching nudge, it's a compliance crisis, and it contradicts how
+ *     PRD.md and the override design (ADR 0002) both frame this as a
+ *     tracked-but-recoverable metric. Kept compliance high, but raised the
+ *     synthetic violation count from 2 to 5 (7 total with the given rows,
+ *     96.5% -> rounds to 97) specifically so seatbelt-violation has real
+ *     material in the Unusual Activity feed instead of reading as a
+ *     near-non-issue with only 4 instances across 200 rows. Two of the
+ *     five new violations sit inside the inefficient stretch — a tired
+ *     operator plausibly skips a safety step, not just runs slower.
+ *
+ * KNOWN DOWNSTREAM DEPENDENCY: docs/DEMO_SCRIPT.md's Coach beat quotes
+ * "Idle 38% against your own normal of 23%" — taken from
+ * SEED_TELEMETRY's actual tail-of-inefficient-stretch window (see
+ * state/store.jsx's RECENT_WINDOW), not invented. If seedTelemetry.js's
+ * generator changes again, re-run that window and re-check the beat.
  */
 export const OPERATOR = {
   id: 'OP1001',
@@ -34,6 +60,6 @@ export const OPERATOR = {
     cycleTimeSec: 162, // 2:42
     idlePercent: 23,
     fuelPerCycleL: 4.8,
-    seatbeltCompliancePercent: 98,
+    seatbeltCompliancePercent: 97,
   },
 }

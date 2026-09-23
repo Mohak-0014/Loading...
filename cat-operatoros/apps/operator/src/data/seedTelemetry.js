@@ -68,10 +68,16 @@ function generateSyntheticRows() {
   const TOTAL_DAYS = 49 // ~196 records at 4/day
   const HOUR_OFFSETS = [7, 9.5, 12.5, 15]
 
-  // Force two additional seatbelt violations in the synthetic portion
-  // (the given rows already carry two). Chosen away from the proximity
-  // cluster so each requirement is visibly its own thing in the data.
-  const FORCED_SEATBELT_VIOLATION_INDICES = new Set([58, 121])
+  // Force five additional seatbelt violations in the synthetic portion
+  // (the given rows already carry two, for seven total / 96.5% compliance
+  // over 200 rows — see the evidence note in data/operator.js for why this
+  // count, not the given sample's raw 50%, is what the baseline is built
+  // from). Two of the five (121, 138) fall inside the inefficient stretch:
+  // a tired operator is plausibly more likely to skip a safety step, not
+  // just run slower. The rest are spread through normal operation, away
+  // from the proximity cluster, so each requirement reads as its own thing
+  // in the data.
+  const FORCED_SEATBELT_VIOLATION_INDICES = new Set([35, 75, 121, 138, 168])
 
   // The last 7 days (28 records) are "this week" — the proximity cluster
   // lives here, in Zone C, satisfying the seed requirement.

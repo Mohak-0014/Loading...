@@ -48,8 +48,18 @@ import { useTelemetryClock, walkTelemetry } from '../hooks/useTelemetryClock.js'
  */
 
 // Recent window used to compute "today's" coaching numbers in Phase 0,
-// where there is no real shift boundary yet — the last ~2 simulated days.
+// where there is no real shift boundary yet.
+//
+// Deliberately NOT the chronological tail of SEED_TELEMETRY: the last 8
+// rows sit in the proximity-cluster week, which reads as ordinary
+// operation on idle/cycle/fuel, so the Coach would boot with "nothing
+// stands out" — a silent Coach mid-demo is a dead beat (see
+// docs/DEMO_SCRIPT.md's Coach note). Pointing at the tail of the
+// inefficient stretch instead — the part of the dataset built to have a
+// real, non-trivial idle/cycle signal — means the very first thing Coach
+// computes always has something honest to show.
 const RECENT_WINDOW = 8
+const INEFFICIENT_STRETCH_END = 156 // exclusive; see seedTelemetry.js
 
 function nowStamp() {
   return new Date().toISOString().slice(0, 19)
@@ -63,7 +73,7 @@ export function buildInitialState() {
     return { ...task, predictedMin: prediction.pointMin, prediction }
   })
 
-  const recentHistory = SEED_TELEMETRY.slice(-RECENT_WINDOW)
+  const recentHistory = SEED_TELEMETRY.slice(INEFFICIENT_STRETCH_END - RECENT_WINDOW, INEFFICIENT_STRETCH_END)
   const anomalies = detectAnomalies(SEED_TELEMETRY, OPERATOR.baseline)
   const coach = buildCoaching(recentHistory, OPERATOR.baseline, anomalies)
 

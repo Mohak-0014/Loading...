@@ -6,8 +6,20 @@ import { TRAINING_MODULES } from '../data/trainingModules.js'
  *
  *   buildCoaching(history, baseline, anomalies) -> {
  *     metrics: [{ label, today, normal, direction }],
- *     oneThing: { text, estimatedImpact, linkedModuleId },
+ *     oneThing: { text, estimatedImpact, linkedModuleId, isInvitation? },
  *   }
+ *
+ * EMPTY STATE: when no metric is worse than baseline by more than
+ * MATERIALITY_THRESHOLD, oneThing is not "nothing to report" — per
+ * docs/AI_GUIDELINES.md §8, an empty state is an invitation, not a status.
+ * It says the operator is matching their own normal and points at Training
+ * as something to do anyway, the same shape as "No hazards reported this
+ * shift. Report one if you see something." `isInvitation: true` marks this
+ * case so a later block can style it differently from a real oneThing
+ * (no impact estimate, no anomaly-linked module — there is nothing to link).
+ * Without a materiality floor this branch was unreachable: a metric even
+ * 1% above baseline still counted as "worse" and got surfaced as the one
+ * thing to fix, which is noise dressed up as coaching.
  *
  * RULES
  * - Compare to the operator's OWN baseline. Never to other operators, never
@@ -81,17 +93,29 @@ export function buildCoaching(history = [], baseline = {}, anomalies = []) {
   return { metrics, oneThing: pickOneThing(metrics, anomalies) }
 }
 
+// Below this relative deviation, "worse than normal" is noise, not
+// something worth a coaching nudge over.
+const MATERIALITY_THRESHOLD = 0.15
+
 function relativeDeviation(metric) {
   if (!metric.normal) return 0
   return Math.abs(metric.today - metric.normal) / Math.abs(metric.normal)
 }
 
 function pickOneThing(metrics, anomalies) {
-  const worse = metrics.filter((m) => m.direction === 'worse' && m.normal != null)
+  const worse = metrics.filter(
+    (m) => m.direction === 'worse' && m.normal != null && relativeDeviation(m) >= MATERIALITY_THRESHOLD,
+  )
   const worst = [...worse].sort((a, b) => relativeDeviation(b) - relativeDeviation(a))[0]
 
   if (!worst) {
-    return { text: 'Nothing stands out today — keep it up.', estimatedImpact: null, linkedModuleId: null }
+    return {
+      text: "You're matching your own normal across the board today.",
+      estimatedImpact: null,
+      linkedModuleId: null,
+      isInvitation: true,
+      invitation: 'Browse the Training Hub any time to stay sharp.',
+    }
   }
 
   const skill = METRIC_SKILL[worst.label] ?? 'Hazard awareness'

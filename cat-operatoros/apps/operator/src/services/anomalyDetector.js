@@ -34,7 +34,7 @@ import { mean, stdev, zScore, quartiles } from '../utils/stats.js'
 // flagged a third of all records as "anomalous" — that is not an unusual
 // rate, that is most of the dataset.
 const Z_THRESHOLD_IDLE = 2
-const Z_THRESHOLD_CYCLE = 2
+const Z_THRESHOLD_CYCLE = 1.7
 const Z_THRESHOLD_FUEL = 2.2
 const MIN_ROWS_FOR_ZSCORE = 8
 
